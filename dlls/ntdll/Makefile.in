@@ -79,3 +79,35 @@ unix_loader_EXTRADEFS = \
 	-DLIBDIR=\"${libdir}\" \
 	-DDATADIR=\"${datadir}\" \
 	-DSYSTEMDLLPATH=\"${system_dllpath}\"
+
+# Base dependencies required for core Wine functionality
+ntdll_IMPORTS += $(ADVAPI32_DLL) $(KERNEL32_DLL)
+
+# Conditional addition of real-time library for shared memory support
+# -lrt provides shmget()/shmat() required for AFL++ coverage tracking
+# Only linked when forkserver is enabled via configure flag
+if HAVE_FORKSERVER
+ntdll_IMPORTS += -lrt  # POSIX shared memory API (required for SHM fuzzing)
+endif
+
+# Security note: Consider adding -z relro here for hardening
+# when enabling experimental features
+
+
+
+
+
+# Define forkserver-specific object files
+# These implement the core cloning and logic
+FORK_SERVER_OBJS = dlls/ntdll/fork_server.o \
+                   dlls/ntdll/coverage.o \
+                   dlls/ntdll/shm_interface.o
+
+# Conditionally include forkserver objects in ntdll build
+# Uses += to preserve existing objects while adding new components
+if HAVE_FORKSERVER
+ntdll_DLLFLAGS += $(FORK_SERVER_OBJS)  # Add to build pipeline
+ntdll_DLLFLAGS += -Wl,-wrap,fork  # Intercept fork() calls
+endif
+
+# Optimization: Consider adding -fPIC here if building as shared lib

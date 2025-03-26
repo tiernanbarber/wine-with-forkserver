@@ -23,6 +23,21 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+
+/* This header file is part of the System V shared memory facility. It provides 
+ * functions and definitions for creating, accessing, and controlling shared memory 
+ * segments. Shared memory is used for efficient data exchange between processes.
+ */
+#include <sys/shm.h>
+
+ * 
+/* This header file provides macros related to process termination and functions 
+ * for waiting for process state changes. It is essential for managing child 
+ * processes, allowing the parent process to wait for and retrieve the status of 
+ * terminated child processes.
+ */
+#include <sys/wait.h>
+
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
 #include "windef.h"
@@ -49,6 +64,19 @@ WINE_DECLARE_DEBUG_CHANNEL(imports);
 #endif
 #define DEFAULT_SECURITY_COOKIE_32  0xbb40e64e
 #define DEFAULT_SECURITY_COOKIE_16  (DEFAULT_SECURITY_COOKIE_32 >> 16)
+
+/* 
+ * This macro defines the name of the environment variable that is used to check
+ * if the Wine fork server is enabled. 
+ */
+#define FORK_SERVER_ENV_VAR "WINE_FORKSERVER"
+
+/*
+ * This macro defines the name of the environment variable that holds the shared
+ * memory ID used by the fork server. The shared memory is used for communication
+ * between the fork server and its child processes.
+ */
+#define FORK_SERVER_SHM_ENV "__AFL_SHM_ID"
 
 #ifdef __i386__
 static const WCHAR pe_dir[] = L"\\i386-windows";
@@ -97,6 +125,19 @@ static UNICODE_STRING dll_directory;  /* extra path for LdrSetDllDirectory */
 static UNICODE_STRING system_dll_path; /* path to search for system dependency dlls */
 static DWORD default_search_flags;  /* default flags set by LdrSetDefaultDllDirectories */
 static WCHAR *default_load_path;    /* default dll search path */
+
+// Flag to indicate if the forkserver is enabled
+static int forkserver_enabled = 0;
+
+// Socket descriptor for the forkserver communication
+static int forkserver_socket = -1;
+
+// Shared memory ID for the forkserver
+static int forkserver_shmid = -1;
+
+// Pointer to the shared memory segment for the forkserver
+static void *forkserver_shm = NULL;
+
 
 struct dll_dir_entry
 {
@@ -550,6 +591,74 @@ static ULONG hash_basename( const UNICODE_STRING *basename )
     RtlHashUnicodeString( basename, TRUE, HASH_STRING_ALGORITHM_DEFAULT, &hash );
     return hash % HASH_MAP_SIZE;
 }
+
+/*************************************************************************
+ *		init_forkserver
+ *
+ * Initializes the forkserver environment and sets up memory for coverage tracking
+ */
+static void init_forkserver(void)
+{
+    // Get the environment variable to check if forkserver is enabled
+    char *env = getenv(FORK_SERVER_ENV_VAR);
+    if (!env || !*env) return; // If not set, return immediately
+
+    forkserver_enabled = 1; // Set the forkserver enabled flag
+    
+    // Set up shared memory for coverage tracking
+    char *shm_env = getenv(FORK_SERVER_SHM_ENV); // Get the shared memory ID from the environment
+    if (shm_env) {
+        forkserver_shmid = atoi(shm_env); // Convert the shared memory ID to an integer
+        forkserver_shm = shmat(forkserver_shmid, NULL, 0); // Attach the shared memory segment
+    }
+
+    // Forkserver initialization handshake
+    char tmp[4] = {0}; // Temporary buffer for handshake
+    if (read(0, tmp, 4) != 4) exit(1); // Read 4 bytes from stdin, exit if it fails
+    if (write(1, tmp, 4) != 4) exit(1); // Write 4 bytes to stdout, exit if it fails
+}
+
+/*************************************************************************
+ *		enter_forkserver_loop
+ *
+ * This function implements the fork server loop for fuzzing.
+ * It waits for requests from the fuzzer, forks a child process to execute the target code,
+ * and communicates the result back to the fuzzer.
+ */
+static void enter_forkserver_loop(void)
+{
+    while (1) { // Infinite loop to continuously handle fuzzer requests
+        uint32_t was_killed; // Variable to store the fuzzer request
+        int status; // Variable to store the status of the child process
+        pid_t child_pid; // Variable to store the process ID of the child process
+        
+        /* Wait for fuzzer request */
+        if (read(0, &was_killed, 4) != 4) exit(1); // Read 4 bytes from stdin, exit if it fails
+        
+        child_pid = fork(); // Fork a new process
+        if (child_pid < 0) exit(1); // Exit if fork fails
+
+        if (child_pid == 0) { /* Child process */
+            /* Reset coverage map */
+            if (forkserver_shm) 
+                memset(forkserver_shm, 0, SHM_SIZE); // Clear the shared memory for coverage tracking
+            
+            /* Return to normal execution */
+            return; // Child process returns to normal execution
+        }
+        
+        /* Parent process */
+        if (waitpid(child_pid, &status, 0) < 0) exit(1); // Wait for the child process to finish, exit if it fails
+        
+        /* Send result to fuzzer */
+        uint32_t result = WIFSIGNALED(status) ? 
+            (0x80000000 | WTERMSIG(status)) : 
+            (WEXITSTATUS(status) << 8); // Determine the result based on the child process status
+            
+        if (write(1, &result, 4) != 4) exit(1); // Write the result to stdout, exit if it fails
+    }
+}
+
 
 /*************************************************************************
  *		get_modref
@@ -1807,6 +1916,13 @@ static NTSTATUS process_attach( LDR_DDAG_NODE *node, LPVOID lpReserved )
     /* Remove recursion flag */
     wm->ldr.Flags &= ~LDR_LOAD_IN_PROGRESS;
 
+    // START forkserver here.
+    init_forkserver();
+    
+    if (forkserver_enabled) {
+        enter_forkserver_loop();
+    }
+
     TRACE("(%s,%p) - END\n", debugstr_w(wm->ldr.BaseDllName.Buffer), lpReserved );
     return status;
 }
@@ -2711,9 +2827,29 @@ static NTSTATUS open_dll_file( UNICODE_STRING *nt_name, WINE_MODREF **pwm, HANDL
     }
 
     size.QuadPart = 0;
-    status = NtCreateSection( mapping, STANDARD_RIGHTS_REQUIRED | SECTION_QUERY |
-                              SECTION_MAP_READ | SECTION_MAP_EXECUTE,
-                              NULL, &size, PAGE_EXECUTE_READ, SEC_IMAGE, handle );
+    
+    /**
+     * Here, set the protection mode to copy-on-write by force if forkserver is enabled
+     */
+
+    if (forkserver_enabled) {
+        /**
+         * NtCreateSection creates a section object, which is a description of a section of memory that can be shared.
+         * 
+         * The SECTION_MAP_WRITE flag allows the section to be mapped for write access.
+         * The PAGE_WRITECOPY flag specifies that the section should be mapped as copy-on-write, 
+         * meaning that when a process writes to the section, a private copy of the page is created for that process.
+         * 
+         */
+        status = NtCreateSection( mapping, STANDARD_RIGHTS_REQUIRED | SECTION_QUERY |
+                                  SECTION_MAP_READ | SECTION_MAP_EXECUTE |
+                                  SECTION_MAP_WRITE, NULL, &size, PAGE_WRITECOPY, SEC_IMAGE, handle );
+    } else {
+        status = NtCreateSection( mapping, STANDARD_RIGHTS_REQUIRED | SECTION_QUERY |
+                                  SECTION_MAP_READ | SECTION_MAP_EXECUTE,
+                                  NULL, &size, PAGE_EXECUTE_READ, SEC_IMAGE, handle );
+    }
+    
     if (!status)
     {
         NtQuerySection( *mapping, SectionImageInformation, image_info, sizeof(*image_info), NULL );
@@ -3401,6 +3537,13 @@ NTSTATUS CDECL wine_server_handle_to_fd( HANDLE handle, unsigned int access, int
 
     return WINE_UNIX_CALL( unix_wine_server_handle_to_fd, &params );
 }
+
+/**
+ * Loads the DLL proper.
+ * Have forking occur here?
+ * Create child process and make parent wait?
+ */
+
 
 /******************************************************************
  *		LdrLoadDll (NTDLL.@)
@@ -4251,6 +4394,7 @@ static void build_wow64_main_module(void)
     RtlFreeUnicodeString( &nt_name );
 }
 
+// LdrpInitialize - need to init forkserver here?
 static void (WINAPI *pWow64LdrpInitialize)( CONTEXT *ctx );
 
 void (WINAPI *pWow64PrepareForException)( EXCEPTION_RECORD *rec, CONTEXT *context ) = NULL;

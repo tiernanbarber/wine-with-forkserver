@@ -25,6 +25,27 @@ AC_ARG_ENABLE(sast,  AS_HELP_STRING([--enable-sast],[enable static application s
 AC_ARG_ENABLE(silent-rules, AS_HELP_STRING([--enable-silent-rules],[use silent build rules (override: "make V=1")]))
 AC_ARG_ENABLE(werror, AS_HELP_STRING([--enable-werror],[treat compilation warnings as errors]))
 
+AC_ARG_ENABLE([forkserver],
+    AS_HELP_STRING([--enable-forkserver],
+    [Enable experimental forkserver for fuzzing (default=no)]),
+    [enable_forkserver=$enableval],
+    [enable_forkserver=no])
+    
+# This conditional enables/disables forkserver-specific features in the build
+# HAVE_FORKSERVER will be defined in config.h to control conditional compilation
+if test "x$enable_forkserver" = xyes; then
+    # Define preprocessor flag to enable forkserver code paths
+    # Used for #ifdef HAVE_FORKSERVER directives in Wine source
+    AC_DEFINE(HAVE_FORKSERVER, 1, [Define if forkserver support enabled])
+    
+    # Future-proofing: Add capability checks here for required features
+    # Example: AC_CHECK_FUNCS([shmget shmat])
+fi
+
+
+
+
+
 AC_ARG_WITH(alsa,      AS_HELP_STRING([--without-alsa],[do not use the Alsa sound support]))
 AC_ARG_WITH(capi,      AS_HELP_STRING([--without-capi],[do not use CAPI (ISDN support)]))
 AC_ARG_WITH(coreaudio, AS_HELP_STRING([--without-coreaudio],[do not use the CoreAudio sound support]))
