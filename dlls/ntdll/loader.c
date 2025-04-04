@@ -19,29 +19,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <assert.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <stdint.h>
-#include <unistd.h> // for fork, read, write, close
-#include <string.h> // for memset
+
 
 #define SHM_SIZE 65536 
-
-/* This header file is part of the System V shared memory facility. It provides 
- * functions and definitions for creating, accessing, and controlling shared memory 
- * segments. Shared memory is used for efficient data exchange between processes.
- */
-#include <sys/shm.h>
-
- * 
-/* This header file provides macros related to process termination and functions 
- * for waiting for process state changes. It is essential for managing child 
- * processes, allowing the parent process to wait for and retrieve the status of 
- * terminated child processes.
- */
-#include <sys/wait.h>
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
@@ -57,6 +37,28 @@
 #include "ntdll_misc.h"
 #include "ddk/ntddk.h"
 #include "ddk/wdm.h"
+
+#include <assert.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <stdint.h>
+#include <unistd.h> // for fork, read, write, close
+#include <string.h> // for memset
+
+/* This header file is part of the System V shared memory facility. It provides 
+ * functions and definitions for creating, accessing, and controlling shared memory 
+ * segments. Shared memory is used for efficient data exchange between processes.
+ */
+#include <sys/shm.h>
+
+ * 
+/* This header file provides macros related to process termination and functions 
+ * for waiting for process state changes. It is essential for managing child 
+ * processes, allowing the parent process to wait for and retrieve the status of 
+ * terminated child processes.
+ */
+#include <sys/wait.h>
 
 WINE_DEFAULT_DEBUG_CHANNEL(module);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
@@ -651,7 +653,7 @@ static void setup_signal_handlers(void) {
 static void init_forkserver(void)
 {
     // variable declarations (ISO C90)
-    char **env, **shm_env;
+    char *env, *shm_env;
     char tmp[4] = {0};
 
     // Get the environment variable to check if forkserver is enabled
