@@ -22,7 +22,12 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <stdint.h>
+#include <unistd.h> // for fork, read, write, close
+#include <string.h> // for memset
 
+#define SHM_SIZE 65536 
 
 /* This header file is part of the System V shared memory facility. It provides 
  * functions and definitions for creating, accessing, and controlling shared memory 
@@ -593,29 +598,102 @@ static ULONG hash_basename( const UNICODE_STRING *basename )
 }
 
 /*************************************************************************
+ *		cleanup_forkserver
+ *
+ * Cleans up the forkserver resources and shared memory upon a failed run.
+ */
+static void cleanup_forkserver(void)
+{
+    if (!forkserver_enabled) return;
+
+    TRACE("Cleaning up forkserver resources\n");
+    
+    if (forkserver_shm) {
+        shmdt(forkserver_shm);
+    }
+    
+    forkserver_shmid = -1;
+    forkserver_enabled = 0;
+    
+    // Close any other resources (sockets, etc.)
+    if (forkserver_socket != -1) {
+        close(forkserver_socket);
+        forkserver_socket = -1;
+    }
+}
+
+/*************************************************************************
+ *		signal_handler
+ *
+ * Signal handler for any relevant signals. Calls cleanup
+ */
+static void signal_handler(int sig) {
+    cleanup_forkserver();
+    _exit(1);
+}
+
+/*************************************************************************
+ *		setup_signal_handlers
+ *
+ * clean forkserver resources on any SIG errors
+ */
+static void setup_signal_handlers(void) {
+    signal(SIGTERM, signal_handler);
+    signal(SIGINT, signal_handler);
+    signal(SIGSEGV, signal_handler);
+}
+
+/*************************************************************************
  *		init_forkserver
  *
  * Initializes the forkserver environment and sets up memory for coverage tracking
  */
 static void init_forkserver(void)
 {
+    // variable declarations (ISO C90)
+    char **env, **shm_env;
+    char tmp[4] = {0};
+
     // Get the environment variable to check if forkserver is enabled
-    char *env = getenv(FORK_SERVER_ENV_VAR);
-    if (!env || !*env) return; // If not set, return immediately
+    env = getenv(FORK_SERVER_ENV_VAR);
+    if (!env || !*env) {
+        TRACE("Forkserver not enabled\n");
+        return; // if not set, return immediately
+    }
 
     forkserver_enabled = 1; // Set the forkserver enabled flag
+    TRACE("Initializing forkserver\n");
+
+    // set up the signal handler for cleanup
+    setup_signal_handlers();
     
     // Set up shared memory for coverage tracking
-    char *shm_env = getenv(FORK_SERVER_SHM_ENV); // Get the shared memory ID from the environment
+    shm_env = getenv(FORK_SERVER_SHM_ENV); // Get the shared memory ID from the environment
     if (shm_env) {
         forkserver_shmid = atoi(shm_env); // Convert the shared memory ID to an integer
+        if (forkserver_shmid == -1) {
+            ERR("Invalid SHM ID\n");
+            return;
+        }
         forkserver_shm = shmat(forkserver_shmid, NULL, 0); // Attach the shared memory segment
+        if (forkserver_shm == (void *)-1) {
+            ERR("Failed to attach shared memory: %s\n", strerror(errno));
+            forkserver_shm = NULL;
+        } else {
+            TRACE("Attached shared memory at %p\n", forkserver_shm);
+        }
     }
 
     // Forkserver initialization handshake
-    char tmp[4] = {0}; // Temporary buffer for handshake
-    if (read(0, tmp, 4) != 4) exit(1); // Read 4 bytes from stdin, exit if it fails
-    if (write(1, tmp, 4) != 4) exit(1); // Write 4 bytes to stdout, exit if it fails
+    memset(tmp, 0, sizeof(tmp)); // Temporary buffer for handshake
+    if (read(0, tmp, 4) != 4) { // Read 4 bytes from stdin
+        ERR("Failed to read handshake\n");
+        exit(1);
+    }
+    if (write(1, tmp, 4) != 4) { // Write 4 bytes to stdout
+        ERR("Failed to write handshake\n");
+        exit(1);
+    }
 }
 
 /*************************************************************************
