@@ -110,6 +110,7 @@
         "__verbose_abort": "cpp",
         "string_view": "cpp",
         "*.ipp": "cpp",
-        "list.h": "c"
+        "list.h": "c",
+        "unistd.h": "c"
     }
 }

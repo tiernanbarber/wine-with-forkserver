@@ -23,14 +23,26 @@
 
 #define SHM_SIZE 65536 
 
-#include "ntstatus.h"
+#ifndef __USE_MISC
+#define __USE_MISC
+#endif
+
+#include <stdarg.h>        // Include first to define va_list
+#include <stdint.h>        // Include standard integer types
+#include <stdlib.h>        // Include standard library functions
+#include <string.h>        // Include string functions
+#include <signal.h>        // Include signal handling
+#include <unistd.h>        // Include fork, read, write, close
+#include <sys/shm.h>       // Include shared memory functions
+#include <sys/wait.h>      // Include process waiting functions
+
+#include "ntstatus.h"      // Wine-specific headers
 #define WIN32_NO_STATUS
 #include "windef.h"
 #include "winnt.h"
 #include "winioctl.h"
 #include "winternl.h"
 #include "delayloadhandler.h"
-
 #include "wine/exception.h"
 #include "wine/debug.h"
 #include "wine/list.h"
@@ -38,27 +50,7 @@
 #include "ddk/ntddk.h"
 #include "ddk/wdm.h"
 
-#include <assert.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <stdint.h>
-#include <unistd.h> // for fork, read, write, close
-#include <string.h> // for memset
 
-/* This header file is part of the System V shared memory facility. It provides 
- * functions and definitions for creating, accessing, and controlling shared memory 
- * segments. Shared memory is used for efficient data exchange between processes.
- */
-#include <sys/shm.h>
-
- * 
-/* This header file provides macros related to process termination and functions 
- * for waiting for process state changes. It is essential for managing child 
- * processes, allowing the parent process to wait for and retrieve the status of 
- * terminated child processes.
- */
-#include <sys/wait.h>
 
 WINE_DEFAULT_DEBUG_CHANNEL(module);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
@@ -711,7 +703,8 @@ static void enter_forkserver_loop(void)
         uint32_t was_killed; // Variable to store the fuzzer request
         int status; // Variable to store the status of the child process
         pid_t child_pid; // Variable to store the process ID of the child process
-        
+        uint32_t result;
+
         /* Wait for fuzzer request */
         if (read(0, &was_killed, 4) != 4) exit(1); // Read 4 bytes from stdin, exit if it fails
         
@@ -731,7 +724,7 @@ static void enter_forkserver_loop(void)
         if (waitpid(child_pid, &status, 0) < 0) exit(1); // Wait for the child process to finish, exit if it fails
         
         /* Send result to fuzzer */
-        uint32_t result = WIFSIGNALED(status) ? 
+        result = WIFSIGNALED(status) ? 
             (0x80000000 | WTERMSIG(status)) : 
             (WEXITSTATUS(status) << 8); // Determine the result based on the child process status
             

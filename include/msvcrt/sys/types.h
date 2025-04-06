@@ -31,6 +31,11 @@ typedef unsigned int   _dev_t;
 #define _DEV_T_DEFINED
 #endif
 
+#ifndef _MODE_T_DEFINED
+#define _MODE_T_DEFINED
+typedef unsigned short _mode_t;  // Original definition in Wine
+#endif
+
 #ifndef _INO_T_DEFINED
 typedef unsigned short _ino_t;
 #define _INO_T_DEFINED
