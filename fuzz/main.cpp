@@ -78,7 +78,7 @@ int main()
                                  "wordpad.exe"};
     const char* fileText = "Hello World!\nThis is input text which will be\n\tused to test each"
                            "of the test text editors \n\nwith random byte flips.";
-    const int numImputs = 5;
+    const int numImputs = 500;
 
     for (int programIndex = 0; programIndex < 5; programIndex++)
     {
