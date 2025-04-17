@@ -56,8 +56,8 @@ USER wineuser
 WORKDIR /home/wineuser
 
 # (Optional) Clone your Wine fork and copy your custom files
-RUN git clone https://github.com/youruser/yourwinefork.git wine-with-forkserver
-COPY ./wine-with-forkserver /home/wineuser/wine-with-forkserver
+RUN git clone https://github.com/tiernanbarber/wine-with-forkserver.git wine-with-forkserver
+# COPY ./wine-with-forkserver /home/wineuser/wine-with-forkserver
 
 # Set up build environment
 ENV PATH="/home/wineuser/.local/bin:${PATH}"
