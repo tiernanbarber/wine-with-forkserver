@@ -65,14 +65,45 @@
 #ifdef HAVE_LINUX_CDROM_H
 # include <linux/cdrom.h>
 #endif
-#ifdef HAVE_LINUX_UCDROM_H
-# include <linux/ucdrom.h>
+#if defined(HAVE_LINUX_CDROM_H) && __has_include(<linux/dvd.h>)
+# include <linux/dvd.h>
 #endif
-#ifdef HAVE_SYS_CDIO_H
-# include <sys/cdio.h>
+#ifdef HAVE_LINUX_CDROM_H
+# include <linux/cdrom.h>
 #endif
-#ifdef HAVE_SYS_SCSIIO_H
-# include <sys/scsiio.h>
+
+/* Fallback DVD ioctl and struct definitions for systems missing them */
+#ifndef DVD_STRUCT_COPYRIGHT
+#define DVD_STRUCT_COPYRIGHT 1
+#define DVD_LU_SEND_RPC_STATE 2
+#define DVD_AUTH 0x5390
+#define DVD_READ_STRUCT 0x5392
+#define DVD_LU_SEND_TITLE_KEY 0x1a
+#define DVD_LU_SEND_CHALLENGE 0x18
+#define DVD_LU_SEND_ASF 0x1b
+#define DVD_LU_SEND_KEY1 0x1c
+#define DVD_HOST_SEND_CHALLENGE 0x1e
+#define DVD_HOST_SEND_KEY2 0x1f
+#define DVD_INVALIDATE_AGID 0x3f
+
+typedef struct {
+    int type;
+    union {
+        struct { int agid; unsigned char chal[10]; } hsc, lsc;
+        struct { int agid; unsigned char key[5]; } hsk, lsk;
+        struct { int agid; int lba; unsigned char title_key[5]; } lstk;
+        struct { int asf; } lsasf;
+        struct { int type, region_mask, rpc_scheme, ucca, vra; } lrpcs;
+    };
+} dvd_authinfo;
+
+typedef struct {
+    int type;
+    union {
+        struct { int agid; unsigned char value[2048]; } disckey;
+        struct { int layer_num, cpst, rmi; } copyright;
+    };
+} dvd_struct;
 #endif
 
 #ifdef __APPLE__

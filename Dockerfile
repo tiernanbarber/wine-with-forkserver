@@ -48,6 +48,8 @@ RUN apt-get update && \
         wget \
         vim \
         sudo \
+        flex \
+        bison \
         ca-certificates
 
 # Add a non-root user for building/running
