@@ -26,6 +26,8 @@
 
 #include "config.h"
 
+#define HAVE_MNTENT_H = 1
+
 #include <sys/statvfs.h>
 #include <assert.h>
 #include <sys/types.h>
