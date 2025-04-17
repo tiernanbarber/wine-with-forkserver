@@ -46,6 +46,10 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
+#include <sys/uio.h>
+#include <sys/un.h>
+#include <sys/ioctl.h>
+#include <sys/syscall.h>
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
