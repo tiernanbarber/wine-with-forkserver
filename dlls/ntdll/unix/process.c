@@ -35,7 +35,6 @@
 #include <time.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <sys/times.h>
 #ifdef HAVE_SYS_TIMES_H
 # include <sys/times.h>
 #endif
