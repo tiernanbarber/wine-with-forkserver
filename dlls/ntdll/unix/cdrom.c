@@ -72,6 +72,158 @@
 # include <linux/cdrom.h>
 #endif
 
+#ifndef CDROMVOLREAD
+#define CDROMVOLREAD    0x5310
+#endif
+
+#ifndef CDROMVOLCTRL
+#define CDROMVOLCTRL    0x5312
+#endif
+
+#ifndef CDROMREADRAW
+#define CDROMREADRAW    0x5315
+#endif
+
+#ifndef CDROMREADAUDIO
+#define CDROMREADAUDIO  0x530e
+#endif
+
+#ifndef CDROM_LBA
+#define CDROM_LBA       0x01
+#endif
+
+#ifndef CD_MSF_OFFSET
+#define CD_MSF_OFFSET   150
+#endif
+
+#ifndef CDROMVOLREAD
+struct cdrom_volctrl {
+    unsigned char channel0, channel1, channel2, channel3;
+};
+#endif
+
+#ifndef CDROMVOLREAD
+struct cdrom_volctrl {
+    unsigned char channel0, channel1, channel2, channel3;
+};
+#endif
+
+#ifndef CDROM_MSF
+struct cdrom_msf {
+    unsigned char cdmsf_min0;
+    unsigned char cdmsf_sec0;
+    unsigned char cdmsf_frame0;
+    unsigned char cdmsf_min1;
+    unsigned char cdmsf_sec1;
+    unsigned char cdmsf_frame1;
+};
+#endif
+
+#ifndef CDROMREADAUDIO
+struct cdrom_read_audio {
+    union {
+        int lba;
+        struct cdrom_msf msf;
+    } addr;
+    unsigned char addr_format;
+    int nframes;
+    void *buf;
+};
+#endif
+
+#ifndef HAVE_STRUCT_CDROM_SUBCHNL
+struct cdrom_addr {
+    unsigned char minute;
+    unsigned char second;
+    unsigned char frame;
+};
+struct cdrom_subchnl {
+    unsigned char cdsc_format;
+    unsigned char cdsc_audiostatus;
+    unsigned char cdsc_adr;
+    unsigned char cdsc_ctrl;
+    unsigned char cdsc_trk;
+    unsigned char cdsc_ind;
+    struct cdrom_addr cdsc_absaddr;
+    struct cdrom_addr cdsc_reladdr;
+};
+#endif
+
+#ifndef CDROMSTART
+#define CDROMSTART 0x5308
+#endif
+
+#ifndef CDROMPLAYMSF
+#define CDROMPLAYMSF 0x5303
+#endif
+
+#ifndef CDROMSEEK
+#define CDROMSEEK 0x530c
+#endif
+
+#ifndef CDROMPAUSE
+#define CDROMPAUSE 0x5301
+#endif
+
+#ifndef CDROMRESUME
+#define CDROMRESUME 0x5302
+#endif
+
+#ifndef CDROMSTOP
+#define CDROMSTOP 0x5307
+#endif
+
+#ifndef CDROMRESET
+#define CDROMRESET 0x5312
+#endif
+
+#ifndef CDROMCLOSETRAY
+#define CDROMCLOSETRAY 0x5319
+#endif
+
+#ifndef CDROMEJECT
+#define CDROMEJECT 0x5309
+#endif
+
+#ifndef CDROM_LOCKDOOR
+#define CDROM_LOCKDOOR 0x5329
+#endif
+
+#ifndef CDROMSUBCHNL
+#define CDROMSUBCHNL 0x530b
+#endif
+
+#ifndef CDROM_MSF
+#define CDROM_MSF 0x02
+#endif
+
+#ifndef CDROM_AUDIO_INVALID
+#define CDROM_AUDIO_INVALID 0x00
+#endif
+#ifndef CDROM_AUDIO_NO_STATUS
+#define CDROM_AUDIO_NO_STATUS 0x01
+#endif
+#ifndef CDROM_AUDIO_PLAY
+#define CDROM_AUDIO_PLAY 0x02
+#endif
+#ifndef CDROM_AUDIO_PAUSED
+#define CDROM_AUDIO_PAUSED 0x03
+#endif
+#ifndef CDROM_AUDIO_COMPLETED
+#define CDROM_AUDIO_COMPLETED 0x04
+#endif
+#ifndef CDROM_AUDIO_ERROR
+#define CDROM_AUDIO_ERROR 0x05
+#endif
+
+#ifndef HAVE_STRUCT_CDROM_MSF0
+struct cdrom_msf0 {
+    unsigned char minute;
+    unsigned char second;
+    unsigned char frame;
+};
+#endif
+
 /* Fallback DVD ioctl and struct definitions for systems missing them */
 #ifndef DVD_STRUCT_COPYRIGHT
 #define DVD_STRUCT_COPYRIGHT 1
