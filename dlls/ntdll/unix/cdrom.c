@@ -71,6 +71,9 @@
  #ifdef HAVE_LINUX_CDROM_H
  # include <linux/cdrom.h>
  #endif
+ #ifdef __linux__
+ # include <linux/cdrom.h>
+ #endif
  
  #ifndef CDROMREADTOCHDR
  #define CDROMREADTOCHDR 0x5305
