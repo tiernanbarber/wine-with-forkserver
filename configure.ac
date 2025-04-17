@@ -26,22 +26,21 @@ AC_ARG_ENABLE(silent-rules, AS_HELP_STRING([--enable-silent-rules],[use silent b
 AC_ARG_ENABLE(werror, AS_HELP_STRING([--enable-werror],[treat compilation warnings as errors]))
 
 AC_ARG_ENABLE([forkserver],
-    AS_HELP_STRING([--enable-forkserver],
-    [Enable experimental forkserver for fuzzing (default=no)]),
-    [enable_forkserver=$enableval],
-    [enable_forkserver=no])
-    
-# This conditional enables/disables forkserver-specific features in the build
-# HAVE_FORKSERVER will be defined in config.h to control conditional compilation
-if test "x$enable_forkserver" = xyes; then
-    # Define preprocessor flag to enable forkserver code paths
-    # Used for #ifdef HAVE_FORKSERVER directives in Wine source
-    AC_DEFINE(HAVE_FORKSERVER, 1, [Define if forkserver support enabled])
-    
-    # Future-proofing: Add capability checks here for required features
-    # Example: AC_CHECK_FUNCS([shmget shmat])
-fi
+  AS_HELP_STRING([--enable-forkserver],[enable forkserver support for fuzzing]),
+  [case "${enableval}" in
+     yes) enable_forkserver=yes ;;
+     no)  enable_forkserver=no ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-forkserver]) ;;
+   esac],
+  [enable_forkserver=no])
 
+if test "x$enable_forkserver" = "xyes"; then
+  AC_DEFINE([HAVE_FORKSERVER], 1, [Define if forkserver support is enabled])
+  HAVE_FORKSERVER=1
+else
+  HAVE_FORKSERVER=0
+fi
+AC_SUBST(HAVE_FORKSERVER)
 
 
 
@@ -391,85 +390,85 @@ m4_ifdef([AC_SYS_YEAR2038],
          [AS_IF(false,[AC_SYS_YEAR2038()])], dnl bypass misguided autoconf error on wow64 builds
          [test "$ac_cv_sys_file_offset_bits" = 64 && AC_DEFINE(_TIME_BITS,64,[Define to 64 to enable 64-bit time_t])])
 
-AC_CHECK_HEADERS(\
-	CL/cl.h \
-	EGL/egl.h \
-	OpenCL/opencl.h \
-	arpa/inet.h \
-	arpa/nameser.h \
-	asm/termbits.h \
-	asm/types.h \
-	asm/user.h \
-        bluetooth/bluetooth.h \
-	elf.h \
-	gettext-po.h \
-	link.h \
-	linux/cdrom.h \
-	linux/filter.h \
-	linux/hdreg.h \
-	linux/hidraw.h \
-	linux/input.h \
-	linux/ioctl.h \
-	linux/major.h \
-	linux/param.h \
-	linux/serial.h \
-	linux/types.h \
-	linux/ucdrom.h \
-	linux/wireless.h \
-	lwp.h \
-	mach-o/loader.h \
-	mach/mach.h \
-	machine/cpu.h \
-	machine/sysarch.h \
-	mntent.h \
-	netdb.h \
-	netinet/in.h \
-	netinet/in_systm.h \
-	netinet/tcp.h \
-	netinet/tcp_fsm.h \
-	pcap/pcap.h \
-	port.h \
-	pwd.h \
-	sched.h \
-	scsi/scsi.h \
-	scsi/scsi_ioctl.h \
-	scsi/sg.h \
-	sys/attr.h \
-	sys/auxv.h \
-	sys/cdio.h \
-	sys/epoll.h \
-	sys/event.h \
-	sys/extattr.h \
-	sys/filio.h \
-	sys/ipc.h \
-	sys/link.h \
-	sys/modem.h \
-	sys/mtio.h \
-	sys/param.h \
-	sys/prctl.h \
-	sys/ptrace.h \
-	sys/queue.h \
-	sys/random.h \
-	sys/resource.h \
-	sys/scsiio.h \
-	sys/shm.h \
-	sys/signal.h \
-	sys/socketvar.h \
-	sys/sockio.h \
-	sys/statvfs.h \
-	sys/strtio.h \
-	sys/syscall.h \
-	sys/sysinfo.h \
-	sys/times.h \
-	sys/uio.h \
-	sys/user.h \
-	sys/utsname.h \
-	sys/vnode.h \
-	sys/xattr.h \
-	syscall.h \
-	utime.h \
-	valgrind/memcheck.h \
-	valgrind/valgrind.h
+AC_CHECK_HEADERS(
+    CL/cl.h,
+    EGL/egl.h,
+    OpenCL/opencl.h,
+    arpa/inet.h,
+    arpa/nameser.h,
+    asm/termbits.h,
+    asm/types.h,
+    asm/user.h,
+    bluetooth/bluetooth.h,
+    elf.h,
+    gettext-po.h,
+    link.h,
+    linux/cdrom.h,
+    linux/filter.h,
+    linux/hdreg.h,
+    linux/hidraw.h,
+    linux/input.h,
+    linux/ioctl.h,
+    linux/major.h,
+    linux/param.h,
+    linux/serial.h,
+    linux/types.h,
+    linux/ucdrom.h,
+    linux/wireless.h,
+    lwp.h,
+    mach-o/loader.h,
+    mach/mach.h,
+    machine/cpu.h,
+    machine/sysarch.h,
+    mntent.h,
+    netdb.h,
+    netinet/in.h,
+    netinet/in_systm.h,
+    netinet/tcp.h,
+    netinet/tcp_fsm.h,
+    pcap/pcap.h,
+    port.h,
+    pwd.h,
+    sched.h,
+    scsi/scsi.h,
+    scsi/scsi_ioctl.h,
+    scsi/sg.h,
+    sys/attr.h,
+    sys/auxv.h,
+    sys/cdio.h,
+    sys/epoll.h,
+    sys/event.h,
+    sys/extattr.h,
+    sys/filio.h,
+    sys/ipc.h,
+    sys/link.h,
+    sys/modem.h,
+    sys/mtio.h,
+    sys/param.h,
+    sys/prctl.h,
+    sys/ptrace.h,
+    sys/queue.h,
+    sys/random.h,
+    sys/resource.h,
+    sys/scsiio.h,
+    sys/shm.h,
+    sys/signal.h,
+    sys/socketvar.h,
+    sys/sockio.h,
+    sys/statvfs.h,
+    sys/strtio.h,
+    sys/syscall.h,
+    sys/sysinfo.h,
+    sys/times.h,
+    sys/uio.h,
+    sys/user.h,
+    sys/utsname.h,
+    sys/vnode.h,
+    sys/xattr.h,
+    syscall.h,
+    utime.h,
+    valgrind/memcheck.h,
+    valgrind/valgrind.h
 )
 AC_HEADER_MAJOR()
 
@@ -491,21 +490,21 @@ AC_CHECK_HEADERS([sys/sysctl.h],,,
      #endif])
 CFLAGS=$saved_sysctl_h_CFLAGS
 
-AC_CHECK_HEADERS(\
-	netinet/ip.h \
-	net/if.h \
-	net/if_arp.h \
-	net/if_dl.h \
-	net/if_types.h \
-	net/route.h \
-	netinet/if_ether.h \
-	netinet/in_pcb.h \
-	netinet/ip_icmp.h \
-	netinet/ip_var.h \
-	netinet/udp.h \
-	netinet6/ip6_var.h \
-	netipx/ipx.h \
-	sys/un.h \
+AC_CHECK_HEADERS(
+    netinet/ip.h,
+    net/if.h,
+    net/if_arp.h,
+    net/if_dl.h,
+    net/if_types.h,
+    net/route.h,
+    netinet/if_ether.h,
+    netinet/in_pcb.h,
+    netinet/ip_icmp.h,
+    netinet/ip_var.h,
+    netinet/udp.h,
+    netinet6/ip6_var.h,
+    netipx/ipx.h,
+    sys/un.h
 ,,,[#include <sys/types.h>
      #include <sys/socket.h>
      #ifdef HAVE_SYS_SOCKETVAR_H
@@ -1249,123 +1248,122 @@ then
 #include <X11/Xutil.h>"
 
     dnl *** All of the following tests require X11/Xlib.h
-    AC_CHECK_HEADERS([X11/extensions/shape.h \
-                      X11/extensions/XInput2.h \
-                      X11/extensions/XShm.h \
-                      X11/extensions/Xfixes.h \
-                      X11/extensions/Xinerama.h \
-                      X11/extensions/Xrandr.h \
-                      X11/extensions/Xrender.h \
-                      X11/extensions/xf86vmode.h \
-                      X11/extensions/xf86vmproto.h],,,
-                      [$xlib_includes])
+    AC_CHECK_HEADERS([X11/extensions/shape.h],,,[$xlib_includes])
+    AC_CHECK_HEADERS([X11/extensions/XInput2.h],,,[$xlib_includes])
+    AC_CHECK_HEADERS([X11/extensions/XShm.h],,,[$xlib_includes])
+    AC_CHECK_HEADERS([X11/extensions/Xfixes.h],,,[$xlib_includes])
+    AC_CHECK_HEADERS([X11/extensions/Xinerama.h],,,[$xlib_includes])
+    AC_CHECK_HEADERS([X11/extensions/Xrandr.h],,,[$xlib_includes])
+    AC_CHECK_HEADERS([X11/extensions/Xrender.h],,,[$xlib_includes])
+    AC_CHECK_HEADERS([X11/extensions/xf86vmode.h],,,[$xlib_includes])
+    AC_CHECK_HEADERS([X11/extensions/xf86vmproto.h],,,[$xlib_includes])
 
-        dnl *** Check for X cursor
-        AC_CHECK_HEADER([X11/Xcursor/Xcursor.h],
-                        [WINE_CHECK_SONAME(Xcursor,XcursorImageLoadCursor,,,[$X_LIBS])],,
-                        [$xlib_includes])
-        WINE_NOTICE_WITH(xcursor,[test "x$ac_cv_lib_soname_Xcursor" = "x"],
-                         [libxcursor ${notice_platform}development files not found, the Xcursor extension won't be supported.])
+      dnl *** Check for X cursor
+      AC_CHECK_HEADER([X11/Xcursor/Xcursor.h],
+              [WINE_CHECK_SONAME(Xcursor,XcursorImageLoadCursor,,,[$X_LIBS])],,
+              [$xlib_includes])
+      WINE_NOTICE_WITH(xcursor,[test "x$ac_cv_lib_soname_Xcursor" = "x"],
+               [libxcursor ${notice_platform}development files not found, the Xcursor extension won't be supported.])
 
-        dnl *** Check for X input extension
-        AC_CHECK_HEADER([X11/extensions/XInput.h],
-                        [WINE_CHECK_SONAME(Xi,XOpenDevice,,,[$X_LIBS])],,
-                        [$xlib_includes])
-        WINE_NOTICE_WITH(xinput,[test "x$ac_cv_lib_soname_Xi" = "x"],
-                         [libxi ${notice_platform}development files not found, the Xinput extension won't be supported.])
+      dnl *** Check for X input extension
+      AC_CHECK_HEADER([X11/extensions/XInput.h],
+              [WINE_CHECK_SONAME(Xi,XOpenDevice,,,[$X_LIBS])],,
+              [$xlib_includes])
+      WINE_NOTICE_WITH(xinput,[test "x$ac_cv_lib_soname_Xi" = "x"],
+               [libxi ${notice_platform}development files not found, the Xinput extension won't be supported.])
 
-        dnl *** Check for X input 2 extension
-        if test "x$ac_cv_lib_soname_Xi" != x
-        then
-            WINE_NOTICE_WITH(xinput2,[test "$ac_cv_header_X11_extensions_XInput2_h" != "yes"],
-                             [XInput2 headers not found, the XInput 2 extension won't be supported.])
-        fi
+      dnl *** Check for X input 2 extension
+      if test "x$ac_cv_lib_soname_Xi" != x
+      then
+        WINE_NOTICE_WITH(xinput2,[test "$ac_cv_header_X11_extensions_XInput2_h" != "yes"],
+                 [XInput2 headers not found, the XInput 2 extension won't be supported.])
+      fi
 
-        dnl *** Check for X Shm extension
-        if test "$ac_cv_header_X11_extensions_XShm_h" = "yes"
-        then
-              AC_CHECK_LIB(Xext, XShmQueryExtension,
-              AC_DEFINE(HAVE_LIBXXSHM, 1, [Define if you have the X Shm extension]),,[$X_LIBS])
-        fi
-        WINE_NOTICE_WITH(xshm,[test "$ac_cv_lib_Xext_XShmQueryExtension" != "yes"],
-                         [XShm ${notice_platform}development files not found, X Shared Memory won't be supported.])
+      dnl *** Check for X Shm extension
+      if test "$ac_cv_header_X11_extensions_XShm_h" = "yes"
+      then
+          AC_CHECK_LIB(Xext, XShmQueryExtension,
+          AC_DEFINE(HAVE_LIBXXSHM, 1, [Define if you have the X Shm extension]),,[$X_LIBS])
+      fi
+      WINE_NOTICE_WITH(xshm,[test "$ac_cv_lib_Xext_XShmQueryExtension" != "yes"],
+               [XShm ${notice_platform}development files not found, X Shared Memory won't be supported.])
 
-        dnl *** Check for X shape extension
-        if test "$ac_cv_header_X11_extensions_shape_h" = "yes"
-        then
-              AC_CHECK_LIB(Xext,XShapeQueryExtension,
-	      AC_DEFINE(HAVE_LIBXSHAPE, 1, [Define if you have the X Shape extension]),,[$X_LIBS])
-        fi
-        WINE_NOTICE_WITH(xshape,[test "$ac_cv_lib_Xext_XShapeQueryExtension" != "yes"],
-                         [XShape ${notice_platform}development files not found, XShape won't be supported.])
+      dnl *** Check for X shape extension
+      if test "$ac_cv_header_X11_extensions_shape_h" = "yes"
+      then
+          AC_CHECK_LIB(Xext,XShapeQueryExtension,
+        AC_DEFINE(HAVE_LIBXSHAPE, 1, [Define if you have the X Shape extension]),,[$X_LIBS])
+      fi
+      WINE_NOTICE_WITH(xshape,[test "$ac_cv_lib_Xext_XShapeQueryExtension" != "yes"],
+               [XShape ${notice_platform}development files not found, XShape won't be supported.])
 
-        dnl *** Check for XFree86 VMODE extension
-        if test "$ac_cv_header_X11_extensions_xf86vmode_h" = "yes" -o "$ac_cv_header_X11_extensions_xf86vmproto_h" = "yes"
-        then
-            WINE_CHECK_SONAME(Xxf86vm,XF86VidModeQueryExtension,,,[$X_LIBS])
-        fi
-        WINE_NOTICE_WITH(xxf86vm,[test "x$ac_cv_lib_soname_Xxf86vm" = "x"],
-                         [libXxf86vm ${notice_platform}development files not found, XFree86 Vidmode won't be supported.])
+      dnl *** Check for XFree86 VMODE extension
+      if test "$ac_cv_header_X11_extensions_xf86vmode_h" = "yes" -o "$ac_cv_header_X11_extensions_xf86vmproto_h" = "yes"
+      then
+        WINE_CHECK_SONAME(Xxf86vm,XF86VidModeQueryExtension,,,[$X_LIBS])
+      fi
+      WINE_NOTICE_WITH(xxf86vm,[test "x$ac_cv_lib_soname_Xxf86vm" = "x"],
+               [libXxf86vm ${notice_platform}development files not found, XFree86 Vidmode won't be supported.])
 
-        dnl *** Check for Transform functions in Xrender
-        if test "$ac_cv_header_X11_extensions_Xrender_h" = "yes" -a "x$ac_cv_lib_soname_X11" != "x"
-        then
-            WINE_CHECK_SONAME(Xrender,XRenderQueryExtension,
-              [AC_CHECK_LIB(Xrender,XRenderSetPictureTransform,
-                [AC_DEFINE(HAVE_XRENDERSETPICTURETRANSFORM, 1,
-                 [Define if Xrender has the XRenderSetPictureTransform function])],,[$X_LIBS])
-               AC_CHECK_LIB(Xrender,XRenderCreateLinearGradient,
-                [AC_DEFINE(HAVE_XRENDERCREATELINEARGRADIENT, 1,
-                 [Define if Xrender has the XRenderCreateLinearGradient function])],,[$X_LIBS])],,[$X_LIBS])
+      dnl *** Check for Transform functions in Xrender
+      if test "$ac_cv_header_X11_extensions_Xrender_h" = "yes" -a "x$ac_cv_lib_soname_X11" != "x"
+      then
+        WINE_CHECK_SONAME(Xrender,XRenderQueryExtension,
+          [AC_CHECK_LIB(Xrender,XRenderSetPictureTransform,
+          [AC_DEFINE(HAVE_XRENDERSETPICTURETRANSFORM, 1,
+           [Define if Xrender has the XRenderSetPictureTransform function])],,[$X_LIBS])
+           AC_CHECK_LIB(Xrender,XRenderCreateLinearGradient,
+          [AC_DEFINE(HAVE_XRENDERCREATELINEARGRADIENT, 1,
+           [Define if Xrender has the XRenderCreateLinearGradient function])],,[$X_LIBS])],,[$X_LIBS])
 
-        fi
-        WINE_WARNING_WITH(xrender,[test "x$ac_cv_lib_soname_Xrender" = "x"],
-                         [libxrender ${notice_platform}development files not found, XRender won't be supported.])
+      fi
+      WINE_WARNING_WITH(xrender,[test "x$ac_cv_lib_soname_Xrender" = "x"],
+               [libxrender ${notice_platform}development files not found, XRender won't be supported.])
 
-        dnl *** Check for X RandR extension
-        if test "$ac_cv_header_X11_extensions_Xrandr_h" = "yes" -a "x$ac_cv_lib_soname_Xrender" != "x"
-        then
-                AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <X11/Xlib.h>
-#include <X11/extensions/Xrandr.h>]], [[static typeof(XRRSetScreenConfigAndRate) * func; if (func) return 0;]])],
-                  [WINE_CHECK_SONAME(Xrandr,XRRQueryExtension,
-                    [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <X11/Xlib.h>
-#include <X11/extensions/Xrandr.h>]], [[static typeof(XRRGetProviderResources) *f; if (f) return 0;]])],
-                      [AC_DEFINE(HAVE_XRRGETPROVIDERRESOURCES, 1,
-                        [Define if Xrandr has the XRRGetProviderResources function])],
-                      [WINE_NOTICE([libxrandr ${notice_platform}development files too old, XRandR display device handler won't be supported.])])],,[$X_LIBS])])
-        fi
-        WINE_NOTICE_WITH(xrandr,[test "x$ac_cv_lib_soname_Xrandr" = "x"],
-                         [libxrandr ${notice_platform}development files not found, XRandr won't be supported.])
+      dnl *** Check for X RandR extension
+      if test "$ac_cv_header_X11_extensions_Xrandr_h" = "yes" -a "x$ac_cv_lib_soname_Xrender" != "x"
+      then
+          AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <X11/Xlib.h>
+  #include <X11/extensions/Xrandr.h>]], [[static typeof(XRRSetScreenConfigAndRate) * func; if (func) return 0;]])],
+            [WINE_CHECK_SONAME(Xrandr,XRRQueryExtension,
+            [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <X11/Xlib.h>
+  #include <X11/extensions/Xrandr.h>]], [[static typeof(XRRGetProviderResources) *f; if (f) return 0;]])],
+              [AC_DEFINE(HAVE_XRRGETPROVIDERRESOURCES, 1,
+              [Define if Xrandr has the XRRGetProviderResources function])],
+              [WINE_NOTICE([libxrandr ${notice_platform}development files too old, XRandR display device handler won't be supported.])])],,[$X_LIBS])])
+      fi
+      WINE_NOTICE_WITH(xrandr,[test "x$ac_cv_lib_soname_Xrandr" = "x"],
+               [libxrandr ${notice_platform}development files not found, XRandr won't be supported.])
 
-        dnl *** Check for Xfixes extension
-        if test "$ac_cv_header_X11_extensions_Xfixes_h" = "yes"
-        then
-                AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <X11/Xlib.h>
-#include <X11/extensions/Xfixes.h>]], [[static typeof(XFixesQueryVersion) * func; if (func) return 0;]])],
-                  [WINE_CHECK_SONAME(Xfixes,XFixesQueryVersion,,,[$X_LIBS])])
-        fi
-        WINE_NOTICE_WITH(xfixes,[test "x$ac_cv_lib_soname_Xfixes" = "x"],
-                         [libxfixes ${notice_platform}development files not found, Xfixes won't be supported.])
+      dnl *** Check for Xfixes extension
+      if test "$ac_cv_header_X11_extensions_Xfixes_h" = "yes"
+      then
+          AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <X11/Xlib.h>
+  #include <X11/extensions/Xfixes.h>]], [[static typeof(XFixesQueryVersion) * func; if (func) return 0;]])],
+            [WINE_CHECK_SONAME(Xfixes,XFixesQueryVersion,,,[$X_LIBS])])
+      fi
+      WINE_NOTICE_WITH(xfixes,[test "x$ac_cv_lib_soname_Xfixes" = "x"],
+               [libxfixes ${notice_platform}development files not found, Xfixes won't be supported.])
 
-        dnl *** Check for Xinerama extension
-        if test "$ac_cv_header_X11_extensions_Xinerama_h" = "yes"
-        then
-                AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <X11/Xlib.h>
-#include <X11/extensions/Xinerama.h>]], [[static typeof(XineramaQueryScreens) * func; if (func) return 0;]])],
-                  [WINE_CHECK_SONAME(Xinerama,XineramaQueryScreens,,,[$X_LIBS])])
-        fi
-        WINE_NOTICE_WITH(xinerama,[test "x$ac_cv_lib_soname_Xinerama" = "x"],
-                         [libxinerama ${notice_platform}development files not found, multi-monitor setups won't be supported.])
+      dnl *** Check for Xinerama extension
+      if test "$ac_cv_header_X11_extensions_Xinerama_h" = "yes"
+      then
+          AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <X11/Xlib.h>
+  #include <X11/extensions/Xinerama.h>]], [[static typeof(XineramaQueryScreens) * func; if (func) return 0;]])],
+            [WINE_CHECK_SONAME(Xinerama,XineramaQueryScreens,,,[$X_LIBS])])
+      fi
+      WINE_NOTICE_WITH(xinerama,[test "x$ac_cv_lib_soname_Xinerama" = "x"],
+               [libxinerama ${notice_platform}development files not found, multi-monitor setups won't be supported.])
 
-        dnl *** Check for X Composite extension
-        AC_CHECK_HEADER([X11/extensions/Xcomposite.h],
-                        [WINE_CHECK_SONAME(Xcomposite,XCompositeRedirectWindow,,,[$X_LIBS])],,
-                        [$xlib_includes])
-        WINE_NOTICE_WITH(xcomposite,[test "x$ac_cv_lib_soname_Xcomposite" = "x"],
-                         [libxcomposite ${notice_platform}development files not found, Xcomposite won't be supported.])
+      dnl *** Check for X Composite extension
+      AC_CHECK_HEADER([X11/extensions/Xcomposite.h],
+              [WINE_CHECK_SONAME(Xcomposite,XCompositeRedirectWindow,,,[$X_LIBS])],,
+              [$xlib_includes])
+      WINE_NOTICE_WITH(xcomposite,[test "x$ac_cv_lib_soname_Xcomposite" = "x"],
+               [libxcomposite ${notice_platform}development files not found, Xcomposite won't be supported.])
 
-        dnl *** Check for XICCallback struct
-        AC_CHECK_MEMBERS([XICCallback.callback, XEvent.xcookie],,,[$xlib_includes])
+      dnl *** Check for XICCallback struct
+      AC_CHECK_MEMBERS([XICCallback.callback, XEvent.xcookie],,,[$xlib_includes])
 
     dnl *** End of X11/Xlib.h check
 
@@ -1639,7 +1637,7 @@ WINE_ERROR_WITH(freetype,[test "x$ac_cv_lib_soname_freetype" = x],
                 [enable_fonts])
 
 dnl **** Check for pthread functions ****
-WINE_CHECK_LIB_FUNCS(\
+WINE_CHECK_LIB_FUNCS(
         pthread_getthreadid_np,
         [$PTHREAD_LIBS])
 
@@ -2095,34 +2093,34 @@ AC_SEARCH_LIBS(dlopen, dl)
 
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $BUILTINFLAG"
-AC_CHECK_FUNCS(\
-        dladdr1 \
-	dlinfo \
-	epoll_create \
-	epoll_pwait2 \
-	fstatfs \
-	futimens \
-	futimes \
-	futimesat \
-	getaddrinfo \
-	getattrlist \
-	getauxval \
-	getifaddrs \
-	getrandom \
-	kqueue \
-	pipe2 \
-	port_create \
-	posix_fadvise \
-	posix_fallocate \
-	prctl \
-	sched_getcpu \
-	sched_yield \
-	setproctitle \
-	setprogname \
-	sigprocmask \
-	sysinfo \
-	tcdrain \
-	thr_kill2
+AC_CHECK_FUNCS(
+    dladdr1,
+    dlinfo,
+    epoll_create,
+    epoll_pwait2,
+    fstatfs,
+    futimens,
+    futimes,
+    futimesat,
+    getaddrinfo,
+    getattrlist,
+    getauxval,
+    getifaddrs,
+    getrandom,
+    kqueue,
+    pipe2,
+    port_create,
+    posix_fadvise,
+    posix_fallocate,
+    prctl,
+    sched_getcpu,
+    sched_yield,
+    setproctitle,
+    setprogname,
+    sigprocmask,
+    sysinfo,
+    tcdrain,
+    thr_kill2
 )
 CFLAGS="$ac_save_CFLAGS"
 
