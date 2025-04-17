@@ -74,7 +74,10 @@
  #ifdef __linux__
  # include <linux/cdrom.h>
  #endif
- 
+
+#if !defined(HAVE_LINUX_CDROM_H) && !defined(__linux__)
+// Only define these if not already defined by the system headers
+
  #ifndef CDROMREADTOCHDR
  #define CDROMREADTOCHDR 0x5305
  #endif
@@ -93,7 +96,7 @@
  #ifndef CDS_DISC_OK
  #define CDS_DISC_OK 4
  #endif
- 
+
  #ifndef CDROMVOLREAD
  #define CDROMVOLREAD    0x5310
  #endif
@@ -166,19 +169,19 @@
  #ifndef CDROM_AUDIO_ERROR
  #define CDROM_AUDIO_ERROR 0x05
  #endif
- 
+
  #ifndef HAVE_STRUCT_CDROM_MCN
  struct cdrom_mcn {
      unsigned char medium_catalog_number[14];
  };
  #endif
- 
+
  #ifndef HAVE_STRUCT_CDROM_VOLCTRL
  struct cdrom_volctrl {
      unsigned char channel0, channel1, channel2, channel3;
  };
  #endif
- 
+
  #ifndef CDROM_MSF
  struct cdrom_msf {
      unsigned char cdmsf_min0;
@@ -189,7 +192,7 @@
      unsigned char cdmsf_frame1;
  };
  #endif
- 
+
  #ifndef HAVE_STRUCT_CDROM_READ_AUDIO
  struct cdrom_read_audio {
      union {
@@ -201,7 +204,7 @@
      void *buf;
  };
  #endif
- 
+
  #ifndef HAVE_STRUCT_CDROM_SUBCHNL
  struct cdrom_addr {
      unsigned char minute;
@@ -221,7 +224,7 @@
      } cdsc_absaddr, cdsc_reladdr;
  };
  #endif
- 
+
  #ifndef HAVE_STRUCT_CDROM_MSF0
  struct cdrom_msf0 {
      unsigned char minute;
@@ -229,7 +232,9 @@
      unsigned char frame;
  };
  #endif
- 
+
+#endif // !defined(HAVE_LINUX_CDROM_H) && !defined(__linux__)
+
  #ifndef IDE0_MAJOR
  #define IDE0_MAJOR 3
  #endif
@@ -1696,17 +1701,17 @@ static NTSTATUS CDROM_SetVolume(int fd, const VOLUME_CONTROL* vc)
  * Some features of this IOCTL are rather poorly documented and
  * not really intuitive either:
  *
- *   1. Although the DiskOffset parameter is meant to be a
- *      byte offset into the disk, it is in fact the sector
- *      number multiplied by 2048 regardless of the actual
- *      sector size.
+ *    1. Although the DiskOffset parameter is meant to be a
+ *       byte offset into the disk, it is in fact the sector
+ *       number multiplied by 2048 regardless of the actual
+ *       sector size.
  *
- *   2. The least significant 11 bits of DiskOffset are ignored.
+ *    2. The least significant 11 bits of DiskOffset are ignored.
  *
- *   3. The TrackMode parameter has no effect on the sector
- *      size. The entire raw sector (i.e. 2352 bytes of data)
- *      is always returned. IMO the TrackMode is only used
- *      to check the correct sector type.
+ *    3. The TrackMode parameter has no effect on the sector
+ *       size. The entire raw sector (i.e. 2352 bytes of data)
+ *       is always returned. IMO the TrackMode is only used
+ *       to check the correct sector type.
  *
  */
 static NTSTATUS CDROM_RawRead(int fd, const RAW_READ_INFO* raw, void* buffer, DWORD len, DWORD* sz)
