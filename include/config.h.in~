@@ -138,9 +138,6 @@
 /* Define to 1 if `numaudioengines' is a member of `oss_sysinfo'. */
 #undef HAVE_OSS_SYSINFO_NUMAUDIOENGINES
 
-/* Define to 1 if you have the `pthread_getthreadid_np' function. */
-#undef HAVE_PTHREAD_GETTHREADID_NP
-
 /* Define to 1 if you have the <pthread_np.h> header file. */
 #undef HAVE_PTHREAD_NP_H
 

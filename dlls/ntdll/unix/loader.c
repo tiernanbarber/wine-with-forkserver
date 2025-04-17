@@ -107,6 +107,61 @@ void *pRtlUserThreadStart = NULL;
 void *p__wine_ctrl_routine = NULL;
 SYSTEM_DLL_INIT_BLOCK *pLdrSystemDllInitBlock = NULL;
 
+#ifdef ENABLE_FORKSERVER
+/* Forkserver implementation for fuzzing support */
+static int forkserver_pipe[2] = {-1, -1};
+static pid_t forkserver_child = -1;
+
+static void forkserver_cleanup(void)
+{
+    if (forkserver_pipe[0] != -1) close(forkserver_pipe[0]);
+    if (forkserver_pipe[1] != -1) close(forkserver_pipe[1]);
+    forkserver_pipe[0] = forkserver_pipe[1] = -1;
+}
+
+static void forkserver_loop(void)
+{
+    char buf;
+    while (1) {
+        ssize_t r = read(forkserver_pipe[0], &buf, 1);
+        if (r <= 0) break;
+        pid_t child = fork();
+        if (child == 0) {
+            /* Child process: close pipe, run normally */
+            forkserver_cleanup();
+            break; // Child continues normal execution
+        } else if (child > 0) {
+            /* Parent: notify fuzzer, wait for child */
+            int status;
+            write(forkserver_pipe[1], "C", 1); // Notify child started
+            waitpid(child, &status, 0);
+            write(forkserver_pipe[1], "D", 1); // Notify child done
+        } else {
+            /* Fork failed */
+            break;
+        }
+    }
+    forkserver_cleanup();
+}
+
+static void forkserver_init(void)
+{
+    if (pipe(forkserver_pipe) == -1) return;
+    pid_t pid = fork();
+    if (pid == 0) {
+        /* Child: run forkserver loop */
+        forkserver_loop();
+        _exit(0);
+    } else if (pid > 0) {
+        /* Parent: continue as normal */
+        forkserver_child = pid;
+    } else {
+        /* Fork failed */
+        forkserver_cleanup();
+    }
+}
+#endif // ENABLE_FORKSERVER
+
 static void * const syscalls[] =
 {
 #define SYSCALL_ENTRY(id,name,args) name,
@@ -2006,6 +2061,7 @@ static void apple_create_wine_thread( void *arg )
         pthread_attr_set_qos_class_np( &attr, QOS_CLASS_USER_INTERACTIVE, 0 );
     if (pthread_create( &thread, &attr, apple_wine_thread, NULL )) exit(1);
     pthread_attr_destroy( &attr );
+    CFRunLoopRun(); /* Should never return, except on error. */
 }
 
 
@@ -2236,4 +2292,17 @@ DECLSPEC_EXPORT void __wine_main( int argc, char *argv[] )
     apple_main_thread();
 #endif
     start_main_thread();
+}
+
+/***********************************************************************
+ *           loader_init
+ *
+ * Initialize the loader.
+ */
+void loader_init( CONTEXT *context, void **entry )
+{
+#ifdef ENABLE_FORKSERVER
+    forkserver_init();
+#endif
+    // ...existing code...
 }
