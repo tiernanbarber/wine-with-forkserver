@@ -36,11 +36,11 @@
 #include <assert.h>        // windows specific 
 #endif
 #include <unistd.h>
-
-#ifdef __linux__
-#include <sys/shm.h>   // Include shared memory functions
-#include <sys/wait.h>  // Include process waiting functions
-#endif     
+#include <sys/types.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/wait.h> // Only for waitpid
 
 #include "ntstatus.h"      // Wine-specific headers
 #define WIN32_NO_STATUS
@@ -137,11 +137,9 @@ static int forkserver_enabled = 0;
 // Socket descriptor for the forkserver communication
 static int forkserver_socket = -1;
 
-// Shared memory ID for the forkserver
-static int forkserver_shmid = -1;
-
 // Pointer to the shared memory segment for the forkserver
 static void *forkserver_shm = NULL;
+static int forkserver_shm_fd = -1; // file descriptor for mmap
 
 
 struct dll_dir_entry
@@ -609,10 +607,14 @@ static void cleanup_forkserver(void)
     TRACE("Cleaning up forkserver resources\n");
     
     if (forkserver_shm) {
-        shmdt(forkserver_shm);
+        munmap(forkserver_shm, SHM_SIZE);
+        forkserver_shm = NULL;
+    }
+    if (forkserver_shm_fd != -1) {
+        close(forkserver_shm_fd);
+        forkserver_shm_fd = -1;
     }
     
-    forkserver_shmid = -1;
     forkserver_enabled = 0;
     
     // Close any other resources (sockets, etc.)
@@ -668,17 +670,20 @@ static void init_forkserver(void)
     setup_signal_handlers();
     
     // Set up shared memory for coverage tracking
-    shm_env = getenv(FORK_SERVER_SHM_ENV); // Get the shared memory ID from the environment
+    shm_env = getenv(FORK_SERVER_SHM_ENV); // Get the shared memory path from the environment
     if (shm_env) {
-        forkserver_shmid = atoi(shm_env); // Convert the shared memory ID to an integer
-        if (forkserver_shmid == -1) {
-            ERR("Invalid SHM ID\n");
+        // Use POSIX shared memory (mmap) instead of SysV shm
+        forkserver_shm_fd = open(shm_env, O_RDWR, 0600);
+        if (forkserver_shm_fd == -1) {
+            ERR("Failed to open shared memory file: %s\n", strerror(errno));
             return;
         }
-        forkserver_shm = shmat(forkserver_shmid, NULL, 0); // Attach the shared memory segment
-        if (forkserver_shm == (void *)-1) {
-            ERR("Failed to attach shared memory: %s\n", strerror(errno));
+        forkserver_shm = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, forkserver_shm_fd, 0);
+        if (forkserver_shm == MAP_FAILED) {
+            ERR("Failed to mmap shared memory: %s\n", strerror(errno));
             forkserver_shm = NULL;
+            close(forkserver_shm_fd);
+            forkserver_shm_fd = -1;
         } else {
             TRACE("Attached shared memory at %p\n", forkserver_shm);
         }
@@ -737,7 +742,6 @@ static void enter_forkserver_loop(void)
         if (write(1, &result, 4) != 4) exit(1); // Write the result to stdout, exit if it fails
     }
 }
-
 
 /*************************************************************************
  *		get_modref
@@ -1846,7 +1850,7 @@ static void call_tls_callbacks( HMODULE module, UINT reason )
         }
         __ENDTRY
         TRACE_(relay)("\1Ret  TLS callback (proc=%p,module=%p,reason=%s,reserved=0)\n",
-                      *callback, module, reason_names[reason] );
+                      *callback, module, reason_names[reason], NULL );
     }
 }
 
@@ -3177,7 +3181,7 @@ static NTSTATUS find_actctx_dll( LPCWSTR libname, LPWSTR *fullname )
                                                        AssemblyDetailedInformationInActivationContext,
                                                        info, size, &needed );
         if (status == STATUS_SUCCESS) break;
-        if (status != STATUS_BUFFER_TOO_SMALL) goto done;
+        if (status == STATUS_BUFFER_TOO_SMALL) goto done;
         RtlFreeHeap( GetProcessHeap(), 0, info );
         size = needed;
         /* restart with larger buffer */

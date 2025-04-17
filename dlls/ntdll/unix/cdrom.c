@@ -21,242 +21,318 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#if 0
-#pragma makedep unix
-#endif
-
-#include "config.h"
-
-#include <errno.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#ifdef MAJOR_IN_MKDEV
-# include <sys/mkdev.h>
-#elif defined(MAJOR_IN_SYSMACROS)
-# include <sys/sysmacros.h>
-#endif
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#ifdef HAVE_SCSI_SG_H
-# include <scsi/sg.h>
-#endif
-#ifdef HAVE_SCSI_SCSI_H
-# include <scsi/scsi.h>
-# undef REASSIGN_BLOCKS  /* avoid conflict with winioctl.h */
-# undef FAILED           /* avoid conflict with winerror.h */
-#endif
-#ifdef HAVE_SCSI_SCSI_IOCTL_H
-# include <scsi/scsi_ioctl.h>
-#endif
-#ifdef HAVE_LINUX_MAJOR_H
-# include <linux/major.h>
-#endif
-#ifdef HAVE_LINUX_HDREG_H
-# include <linux/hdreg.h>
-#endif
-#ifdef HAVE_LINUX_PARAM_H
-# include <linux/param.h>
-#endif
-#ifdef HAVE_LINUX_CDROM_H
-# include <linux/cdrom.h>
-#endif
-#if defined(HAVE_LINUX_CDROM_H) && __has_include(<linux/dvd.h>)
-# include <linux/dvd.h>
-#endif
-#ifdef HAVE_LINUX_CDROM_H
-# include <linux/cdrom.h>
-#endif
-
-#ifndef CDROMVOLREAD
-#define CDROMVOLREAD    0x5310
-#endif
-
-#ifndef CDROMVOLCTRL
-#define CDROMVOLCTRL    0x5312
-#endif
-
-#ifndef CDROMREADRAW
-#define CDROMREADRAW    0x5315
-#endif
-
-#ifndef CDROMREADAUDIO
-#define CDROMREADAUDIO  0x530e
-#endif
-
-#ifndef CDROM_LBA
-#define CDROM_LBA       0x01
-#endif
-
-#ifndef CD_MSF_OFFSET
-#define CD_MSF_OFFSET   150
-#endif
-
-#ifndef CDROMVOLREAD
-struct cdrom_volctrl {
-    unsigned char channel0, channel1, channel2, channel3;
-};
-#endif
-
-#ifndef CDROMVOLREAD
-struct cdrom_volctrl {
-    unsigned char channel0, channel1, channel2, channel3;
-};
-#endif
-
-#ifndef CDROM_MSF
-struct cdrom_msf {
-    unsigned char cdmsf_min0;
-    unsigned char cdmsf_sec0;
-    unsigned char cdmsf_frame0;
-    unsigned char cdmsf_min1;
-    unsigned char cdmsf_sec1;
-    unsigned char cdmsf_frame1;
-};
-#endif
-
-#ifndef CDROMREADAUDIO
-struct cdrom_read_audio {
-    union {
-        int lba;
-        struct cdrom_msf msf;
-    } addr;
-    unsigned char addr_format;
-    int nframes;
-    void *buf;
-};
-#endif
-
-#ifndef HAVE_STRUCT_CDROM_SUBCHNL
-struct cdrom_addr {
-    unsigned char minute;
-    unsigned char second;
-    unsigned char frame;
-};
-struct cdrom_subchnl {
-    unsigned char cdsc_format;
-    unsigned char cdsc_audiostatus;
-    unsigned char cdsc_adr;
-    unsigned char cdsc_ctrl;
-    unsigned char cdsc_trk;
-    unsigned char cdsc_ind;
-    struct cdrom_addr cdsc_absaddr;
-    struct cdrom_addr cdsc_reladdr;
-};
-#endif
-
-#ifndef CDROMSTART
-#define CDROMSTART 0x5308
-#endif
-
-#ifndef CDROMPLAYMSF
-#define CDROMPLAYMSF 0x5303
-#endif
-
-#ifndef CDROMSEEK
-#define CDROMSEEK 0x530c
-#endif
-
-#ifndef CDROMPAUSE
-#define CDROMPAUSE 0x5301
-#endif
-
-#ifndef CDROMRESUME
-#define CDROMRESUME 0x5302
-#endif
-
-#ifndef CDROMSTOP
-#define CDROMSTOP 0x5307
-#endif
-
-#ifndef CDROMRESET
-#define CDROMRESET 0x5312
-#endif
-
-#ifndef CDROMCLOSETRAY
-#define CDROMCLOSETRAY 0x5319
-#endif
-
-#ifndef CDROMEJECT
-#define CDROMEJECT 0x5309
-#endif
-
-#ifndef CDROM_LOCKDOOR
-#define CDROM_LOCKDOOR 0x5329
-#endif
-
-#ifndef CDROMSUBCHNL
-#define CDROMSUBCHNL 0x530b
-#endif
-
-#ifndef CDROM_MSF
-#define CDROM_MSF 0x02
-#endif
-
-#ifndef CDROM_AUDIO_INVALID
-#define CDROM_AUDIO_INVALID 0x00
-#endif
-#ifndef CDROM_AUDIO_NO_STATUS
-#define CDROM_AUDIO_NO_STATUS 0x01
-#endif
-#ifndef CDROM_AUDIO_PLAY
-#define CDROM_AUDIO_PLAY 0x02
-#endif
-#ifndef CDROM_AUDIO_PAUSED
-#define CDROM_AUDIO_PAUSED 0x03
-#endif
-#ifndef CDROM_AUDIO_COMPLETED
-#define CDROM_AUDIO_COMPLETED 0x04
-#endif
-#ifndef CDROM_AUDIO_ERROR
-#define CDROM_AUDIO_ERROR 0x05
-#endif
-
-#ifndef HAVE_STRUCT_CDROM_MSF0
-struct cdrom_msf0 {
-    unsigned char minute;
-    unsigned char second;
-    unsigned char frame;
-};
-#endif
-
-/* Fallback DVD ioctl and struct definitions for systems missing them */
-#ifndef DVD_STRUCT_COPYRIGHT
-#define DVD_STRUCT_COPYRIGHT 1
-#define DVD_LU_SEND_RPC_STATE 2
-#define DVD_AUTH 0x5390
-#define DVD_READ_STRUCT 0x5392
-#define DVD_LU_SEND_TITLE_KEY 0x1a
-#define DVD_LU_SEND_CHALLENGE 0x18
-#define DVD_LU_SEND_ASF 0x1b
-#define DVD_LU_SEND_KEY1 0x1c
-#define DVD_HOST_SEND_CHALLENGE 0x1e
-#define DVD_HOST_SEND_KEY2 0x1f
-#define DVD_INVALIDATE_AGID 0x3f
-
-typedef struct {
-    int type;
-    union {
-        struct { int agid; unsigned char chal[10]; } hsc, lsc;
-        struct { int agid; unsigned char key[5]; } hsk, lsk;
-        struct { int agid; int lba; unsigned char title_key[5]; } lstk;
-        struct { int asf; } lsasf;
-        struct { int type, region_mask, rpc_scheme, ucca, vra; } lrpcs;
-    };
-} dvd_authinfo;
-
-typedef struct {
-    int type;
-    union {
-        struct { int agid; unsigned char value[2048]; } disckey;
-        struct { int layer_num, cpst, rmi; } copyright;
-    };
-} dvd_struct;
-#endif
+ #if 0
+ #pragma makedep unix
+ #endif
+ 
+ #include "config.h"
+ 
+ #include <errno.h>
+ #include <string.h>
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+ #include <fcntl.h>
+ #include <sys/stat.h>
+ #ifdef MAJOR_IN_MKDEV
+ # include <sys/mkdev.h>
+ #elif defined(MAJOR_IN_SYSMACROS)
+ # include <sys/sysmacros.h>
+ #endif
+ #include <sys/types.h>
+ #include <sys/ioctl.h>
+ #ifdef HAVE_SCSI_SG_H
+ # include <scsi/sg.h>
+ #endif
+ #ifdef HAVE_SCSI_SCSI_H
+ # include <scsi/scsi.h>
+ # undef REASSIGN_BLOCKS  /* avoid conflict with winioctl.h */
+ # undef FAILED           /* avoid conflict with winerror.h */
+ #endif
+ #ifdef HAVE_SCSI_SCSI_IOCTL_H
+ # include <scsi/scsi_ioctl.h>
+ #endif
+ #ifdef HAVE_LINUX_MAJOR_H
+ # include <linux/major.h>
+ #endif
+ #ifdef HAVE_LINUX_HDREG_H
+ # include <linux/hdreg.h>
+ #endif
+ #ifdef HAVE_LINUX_PARAM_H
+ # include <linux/param.h>
+ #endif
+ #ifdef HAVE_LINUX_CDROM_H
+ # include <linux/cdrom.h>
+ #endif
+ #if defined(HAVE_LINUX_CDROM_H) && __has_include(<linux/dvd.h>)
+ # include <linux/dvd.h>
+ #endif
+ #ifdef HAVE_LINUX_CDROM_H
+ # include <linux/cdrom.h>
+ #endif
+ 
+ #ifndef CDROMREADTOCHDR
+ #define CDROMREADTOCHDR 0x5305
+ #endif
+ #ifndef CDROM_LEADOUT
+ #define CDROM_LEADOUT 0xAA
+ #endif
+ #ifndef CDROMREADTOCENTRY
+ #define CDROMREADTOCENTRY 0x5306
+ #endif
+ #ifndef CDROM_GET_MCN
+ #define CDROM_GET_MCN 0x5311
+ #endif
+ #ifndef CDROM_DRIVE_STATUS
+ #define CDROM_DRIVE_STATUS 0x5326
+ #endif
+ #ifndef CDS_DISC_OK
+ #define CDS_DISC_OK 4
+ #endif
+ 
+ #ifndef CDROMVOLREAD
+ #define CDROMVOLREAD    0x5310
+ #endif
+ #ifndef CDROMVOLCTRL
+ #define CDROMVOLCTRL    0x5312
+ #endif
+ #ifndef CDROMREADRAW
+ #define CDROMREADRAW    0x5315
+ #endif
+ #ifndef CDROMREADAUDIO
+ #define CDROMREADAUDIO  0x530e
+ #endif
+ #ifndef CDROM_LBA
+ #define CDROM_LBA       0x01
+ #endif
+ #ifndef CD_MSF_OFFSET
+ #define CD_MSF_OFFSET   150
+ #endif
+ #ifndef CDROMSTART
+ #define CDROMSTART 0x5308
+ #endif
+ #ifndef CDROMPLAYMSF
+ #define CDROMPLAYMSF 0x5303
+ #endif
+ #ifndef CDROMSEEK
+ #define CDROMSEEK 0x530c
+ #endif
+ #ifndef CDROMPAUSE
+ #define CDROMPAUSE 0x5301
+ #endif
+ #ifndef CDROMRESUME
+ #define CDROMRESUME 0x5302
+ #endif
+ #ifndef CDROMSTOP
+ #define CDROMSTOP 0x5307
+ #endif
+ #ifndef CDROMRESET
+ #define CDROMRESET 0x5312
+ #endif
+ #ifndef CDROMCLOSETRAY
+ #define CDROMCLOSETRAY 0x5319
+ #endif
+ #ifndef CDROMEJECT
+ #define CDROMEJECT 0x5309
+ #endif
+ #ifndef CDROM_LOCKDOOR
+ #define CDROM_LOCKDOOR 0x5329
+ #endif
+ #ifndef CDROMSUBCHNL
+ #define CDROMSUBCHNL 0x530b
+ #endif
+ #ifndef CDROM_MSF
+ #define CDROM_MSF 0x02
+ #endif
+ #ifndef CDROM_AUDIO_INVALID
+ #define CDROM_AUDIO_INVALID 0x00
+ #endif
+ #ifndef CDROM_AUDIO_NO_STATUS
+ #define CDROM_AUDIO_NO_STATUS 0x01
+ #endif
+ #ifndef CDROM_AUDIO_PLAY
+ #define CDROM_AUDIO_PLAY 0x02
+ #endif
+ #ifndef CDROM_AUDIO_PAUSED
+ #define CDROM_AUDIO_PAUSED 0x03
+ #endif
+ #ifndef CDROM_AUDIO_COMPLETED
+ #define CDROM_AUDIO_COMPLETED 0x04
+ #endif
+ #ifndef CDROM_AUDIO_ERROR
+ #define CDROM_AUDIO_ERROR 0x05
+ #endif
+ 
+ #ifndef HAVE_STRUCT_CDROM_MCN
+ struct cdrom_mcn {
+     unsigned char medium_catalog_number[14];
+ };
+ #endif
+ 
+ #ifndef HAVE_STRUCT_CDROM_VOLCTRL
+ struct cdrom_volctrl {
+     unsigned char channel0, channel1, channel2, channel3;
+ };
+ #endif
+ 
+ #ifndef CDROM_MSF
+ struct cdrom_msf {
+     unsigned char cdmsf_min0;
+     unsigned char cdmsf_sec0;
+     unsigned char cdmsf_frame0;
+     unsigned char cdmsf_min1;
+     unsigned char cdmsf_sec1;
+     unsigned char cdmsf_frame1;
+ };
+ #endif
+ 
+ #ifndef HAVE_STRUCT_CDROM_READ_AUDIO
+ struct cdrom_read_audio {
+     union {
+         int lba;
+         struct cdrom_msf msf;
+     } addr;
+     unsigned char addr_format;
+     int nframes;
+     void *buf;
+ };
+ #endif
+ 
+ #ifndef HAVE_STRUCT_CDROM_SUBCHNL
+ struct cdrom_addr {
+     unsigned char minute;
+     unsigned char second;
+     unsigned char frame;
+ };
+ struct cdrom_subchnl {
+     unsigned char cdsc_format;
+     unsigned char cdsc_audiostatus;
+     unsigned char cdsc_adr;
+     unsigned char cdsc_ctrl;
+     unsigned char cdsc_trk;
+     unsigned char cdsc_ind;
+     union {
+         struct cdrom_addr msf;
+         struct cdrom_addr lba;
+     } cdsc_absaddr, cdsc_reladdr;
+ };
+ #endif
+ 
+ #ifndef HAVE_STRUCT_CDROM_MSF0
+ struct cdrom_msf0 {
+     unsigned char minute;
+     unsigned char second;
+     unsigned char frame;
+ };
+ #endif
+ 
+ #ifndef IDE0_MAJOR
+ #define IDE0_MAJOR 3
+ #endif
+ #ifndef IDE1_MAJOR
+ #define IDE1_MAJOR 22
+ #endif
+ #ifndef IDE2_MAJOR
+ #define IDE2_MAJOR 33
+ #endif
+ #ifndef IDE3_MAJOR
+ #define IDE3_MAJOR 34
+ #endif
+ #ifndef IDE4_MAJOR
+ #define IDE4_MAJOR 56
+ #endif
+ #ifndef IDE5_MAJOR
+ #define IDE5_MAJOR 57
+ #endif
+ #ifndef IDE6_MAJOR
+ #define IDE6_MAJOR 88
+ #endif
+ #ifndef IDE7_MAJOR
+ #define IDE7_MAJOR 89
+ #endif
+ 
+ /* Fallback DVD ioctl and struct definitions for systems missing them */
+ #ifndef DVD_STRUCT_COPYRIGHT
+ #define DVD_STRUCT_COPYRIGHT 1
+ #define DVD_LU_SEND_RPC_STATE 2
+ #define DVD_AUTH 0x5390
+ #define DVD_READ_STRUCT 0x5392
+ #define DVD_LU_SEND_TITLE_KEY 0x1a
+ #define DVD_LU_SEND_CHALLENGE 0x18
+ #define DVD_LU_SEND_ASF 0x1b
+ #define DVD_LU_SEND_KEY1 0x1c
+ #define DVD_LU_SEND_AGID 0x18
+ #define DVD_HOST_SEND_CHALLENGE 0x1e
+ #define DVD_HOST_SEND_KEY2 0x1f
+ #define DVD_INVALIDATE_AGID 0x3f
+ #define DVD_STRUCT_DISCKEY 3
+ #define DVD_STRUCT_PHYSICAL 0
+ #define DVD_STRUCT_BCA 5
+ #define DVD_STRUCT_MANUFACT 6
+ 
+ struct dvd_layer {
+     unsigned char book_version;
+     unsigned char book_type;
+     unsigned char min_rate;
+     unsigned char disc_size;
+     unsigned char layer_type;
+     unsigned char track_path;
+     unsigned char nlayers;
+     unsigned char track_density;
+     unsigned char linear_density;
+     unsigned int start_sector;
+     unsigned int end_sector;
+     unsigned int end_sector_l0;
+     unsigned char bca;
+ };
+ struct dvd_physical {
+     int type;
+     int layer_num;
+     struct dvd_layer layer[4];
+ };
+ struct dvd_copyright {
+     int type;
+     int layer_num;
+     unsigned char cpst;
+     unsigned char rmi;
+ };
+ struct dvd_disckey {
+     int type;
+     int agid;
+     unsigned char value[2048];
+ };
+ struct dvd_bca {
+     int type;
+     int len;
+     unsigned char value[188];
+ };
+ struct dvd_manufact {
+     int type;
+     int layer_num;
+     unsigned char value[2048];
+ };
+ 
+ typedef struct {
+     int type;
+     union {
+         struct { int agid; unsigned char chal[10]; } hsc, lsc;
+         struct { int agid; unsigned char key[5]; } hsk, lsk;
+         struct { int agid; int lba; unsigned char title_key[5]; } lstk;
+         struct { int asf; } lsasf;
+         struct { int type, region_mask, rpc_scheme, ucca, vra; } lrpcs;
+         struct { int agid; } lsa;
+     };
+ } dvd_authinfo;
+ 
+ typedef struct {
+     int type;
+     union {
+         struct { int agid; unsigned char value[2048]; } disckey;
+         struct { int layer_num, cpst, rmi; } copyright;
+     };
+ } dvd_struct;
+ #endif
 
 #ifdef __APPLE__
 # include <libkern/OSByteOrder.h>
