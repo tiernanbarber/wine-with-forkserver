@@ -27,7 +27,6 @@
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
-#include <sys/times.h>
 
 #include "ntstatus.h"
 #define WIN32_NO_STATUS
