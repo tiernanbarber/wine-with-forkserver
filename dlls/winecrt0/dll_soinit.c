@@ -24,6 +24,9 @@
 
 #include "config.h"
 
+#define HAVE_ELF_H 1
+#define HAVE_LINK_H 1
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
