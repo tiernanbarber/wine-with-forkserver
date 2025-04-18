@@ -75,7 +75,7 @@ int main()
                                  "notepad.exe",
                                  "notepad++.exe",
                                  "atom.exe",
-                                 "wordpad.exe"};
+                                 "gvim.exe"};
     const char* fileText = "Hello World!\nThis is input text which will be\n\tused to test each"
                            "of the test text editors \n\nwith random byte flips.";
     const int numImputs = 500;
