@@ -111,6 +111,7 @@
         "string_view": "cpp",
         "*.ipp": "cpp",
         "list.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "assert.h": "c"
     }
 }

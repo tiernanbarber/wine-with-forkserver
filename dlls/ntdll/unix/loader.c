@@ -39,6 +39,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <dlfcn.h>
+#include <sys/resource.h>
+#include <pwd.h>
 #ifdef HAVE_PWD_H
 # include <pwd.h>
 #endif

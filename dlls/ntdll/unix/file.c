@@ -26,6 +26,9 @@
 
 #include "config.h"
 
+#define HAVE_MNTENT_H = 1
+
+#include <sys/statvfs.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -151,6 +154,22 @@ typedef struct
 
 /* Case-insensitivity attribute */
 #define EXT4_CASEFOLD_FL 0x40000000
+
+#ifndef MEM_MAJOR
+#define MEM_MAJOR 1
+#endif
+#ifndef TTY_MAJOR
+#define TTY_MAJOR 4
+#endif
+#ifndef LP_MAJOR
+#define LP_MAJOR 6
+#endif
+#ifndef SCSI_TAPE_MAJOR
+#define SCSI_TAPE_MAJOR 9
+#endif
+#ifndef LOOP_MAJOR
+#define LOOP_MAJOR 7
+#endif
 
 #ifndef O_DIRECTORY
 # define O_DIRECTORY 0200000 /* must be directory */
