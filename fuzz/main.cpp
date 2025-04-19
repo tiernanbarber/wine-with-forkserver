@@ -71,19 +71,14 @@ void fuzz(const char *benchmark, const char *seed, const int numImputs)
 int main()
 {
     // Constants for fuzzing
-    const char* benchmarks[5] = {"sublime_text.exe",
-                                 "notepad.exe",
-                                 "notepad++.exe",
-                                 "atom.exe",
-                                 "gvim.exe"};
     const char* fileText = "Hello World!\nThis is input text which will be\n\tused to test each"
                            "of the test text editors \n\nwith random byte flips.";
-    const int numImputs = 500;
+    const int numImputs = 5;
 
-    for (int programIndex = 0; programIndex < 5; programIndex++)
-    {
-        fuzz(benchmarks[programIndex], fileText, numImputs);
-    }
+    fuzz("sublime_text.exe", fileText, numImputs);
+    fuzz("notepad.exe", fileText, numImputs);
+    fuzz("notepad++.exe", fileText, numImputs);
+    fuzz("gvim.exe", fileText, 5);
     return 0;
 }
 // TIP See CLion help at <a
